@@ -134,6 +134,9 @@ app.post("/subscribe", async (req, res) => {
 app.post("/api/appointment", async (req, res) => {
     try {
         const { fullName, email, phone, service, preferredDate, preferredTime, duration, message } = req.body;
+        const normalizedService = Array.isArray(service)
+            ? service.filter(Boolean).join(", ")
+            : (service || "");
 
         // 1. Setup email transporter
         const transporter = nodemailer.createTransport({
@@ -150,14 +153,14 @@ app.post("/api/appointment", async (req, res) => {
         const mailOptions = {
             from: `"${process.env.SMTP_NAME || 'Shritva'}" <${process.env.SMTP_USER}>`,
             to: process.env.SMTP_USER,
-            subject: `New Appointment Request: ${service}`,
+            subject: `New Appointment Request: ${normalizedService}`,
             html: `
                 <h3>New Appointment Request</h3>
                 <table border="1" cellpadding="10" cellspacing="0" style="border-collapse: collapse; width: 100%;">
                     <tr><td><strong>Full Name:</strong></td><td>${fullName}</td></tr>
                     <tr><td><strong>Email:</strong></td><td>${email}</td></tr>
                     <tr><td><strong>Phone:</strong></td><td>${phone}</td></tr>
-                    <tr><td><strong>Service:</strong></td><td>${service}</td></tr>
+                    <tr><td><strong>Service:</strong></td><td>${normalizedService}</td></tr>
                     <tr><td><strong>Preferred Date:</strong></td><td>${preferredDate || 'Not specified'}</td></tr>
                     <tr><td><strong>Message:</strong></td><td>${message || 'No additional notes'}</td></tr>
                 </table>
@@ -177,7 +180,7 @@ app.post("/api/appointment", async (req, res) => {
                     fullName: fullName,
                     email: email,
                     phone: phone,
-                    service: service,
+                    service: normalizedService,
                     preferredDate: preferredDate || 'Not specified',
                     preferredTime: preferredTime || 'Not specified',
                     duration: `${duration} minutes`,
