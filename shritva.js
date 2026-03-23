@@ -93,11 +93,12 @@ app.post("/subscribe", async (req, res) => {
             timeZone: "Asia/Kolkata",
         });
 
-        // Email content (format)
-        let mailOptions = {
-            from: `"My Website" <${email}>`,
-            to: email, // where you receive notifications
-            subject: "New Subscription Alert ",
+        // 1) Notify admin about new subscriber
+        const adminMailOptions = {
+            from: `"${process.env.SMTP_NAME || "My Website"}" <${process.env.SMTP_USER}>`,
+            to: process.env.SMTP_USER,
+            replyTo: email,
+            subject: "New Subscription Alert",
             html: `
         <h2>🎉 New Subscriber!</h2>
         <p>A new user has subscribed to your website.</p>
@@ -109,10 +110,26 @@ app.post("/subscribe", async (req, res) => {
       `,
         };
 
-        await transporter.sendMail(mailOptions);
+        // 2) Send thank-you email to subscriber
+        const subscriberMailOptions = {
+            from: `"${process.env.SMTP_NAME || "My Website"}" <${process.env.SMTP_USER}>`,
+            to: email,
+            subject: "Thanks for subscribing to Shritva",
+            html: `
+        <h2>Thank you for subscribing! 🎉</h2>
+        <p>We're happy to have you with us.</p>
+        <p>You will receive updates, offers, and useful information from Shritva.</p>
+        <p style="margin-top: 20px;">Regards,<br/>Shritva Team</p>
+      `,
+        };
 
-        res.status(200).json({ success: true, message: "Subscription email sent!" });
-        console.log("email send successfully ")
+        await Promise.all([
+            transporter.sendMail(adminMailOptions),
+            transporter.sendMail(subscriberMailOptions),
+        ]);
+
+        res.status(200).json({ success: true, message: "Subscription completed successfully!" });
+        console.log("subscription emails sent successfully")
     } catch (error) {
         console.error("Error sending email:", error);
         res.status(500).json({ success: false, message: "Error sending email" });
